@@ -10,4 +10,4 @@ COPY . .
 
 # Програмний продукт розроблено Соколом Андрієм - Falkon AI
 # Використовуємо shell form для підтримки $PORT від Railway
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
