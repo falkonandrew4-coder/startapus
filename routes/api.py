@@ -99,19 +99,32 @@ async def chat_endpoint(request: ChatRequest):
         reply = await generate_response(messages, model=model)
         next_stage = "deep_questions"
     
-    # ── Етап 3: ГЛИБИННІ ПИТАННЯ (по одному!) ──────────────────────
+    # ── Етап 3: ГЛИБИННІ ПИТАННЯ (мінімум 20!) ────────────────────
     elif stage == "deep_questions":
-        messages = [{"role": "system", "content": get_prompt("deep_questions")}]
-        messages.extend(history[-20:])  # Більше контексту для збереження нитки розмови
+        # Рахуємо скільки питань вже задано (повідомлення AI в deep_questions)
+        questions_asked = sum(1 for m in history if m["role"] == "assistant")
+        
+        # Формуємо системний промпт з контекстом про кількість питань
+        system_prompt = get_prompt("deep_questions")
+        if questions_asked < 20:
+            system_prompt += f"\n\n[ВНУТРІШНІЙ СТАТУС: задано {questions_asked} питань з мінімальних 20. ОБОВ'ЯЗКОВО продовжуй задавати питання.]"
+        elif questions_asked < 30:
+            system_prompt += f"\n\n[ВНУТРІШНІЙ СТАТУС: задано {questions_asked} питань. Ти можеш завершити якщо відповіді вичерпні, або продовжити до 30 якщо є прогалини.]"
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        messages.extend(history[-30:])  # Більше контексту для збереження нитки розмови
         messages.append({"role": "user", "content": request.message})
         
         reply = await generate_response(messages, model=model)
         
-        # Перевіряємо чи AI сам вирішив перейти до генерації
-        if "генерую ваш пакет" in reply.lower() or "достатньо інформації" in reply.lower():
-            next_stage = "artifact_generation"
-        else:
-            next_stage = "deep_questions"
+        # Перевіряємо чи AI вирішив перейти до генерації (і питань мінімум 20)
+        transition_signals = [
+            "генерую ваш повний пакет",
+            "є все необхідне",
+            "дякую за вичерпні відповіді"
+        ]
+        should_transition = questions_asked >= 20 and any(s in reply.lower() for s in transition_signals)
+        next_stage = "artifact_generation" if should_transition else "deep_questions"
     
     # ── Етап 4: ГЕНЕРАЦІЯ АРТЕФАКТІВ (gpt-4o!) ──────────────────────
     elif stage == "artifact_generation":
