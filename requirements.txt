@@ -6,5 +6,6 @@ openai
 duckduckgo_search
 asyncpg
 sqlalchemy
-pydantic
+pydantic[email]
 supabase
+email-validator
