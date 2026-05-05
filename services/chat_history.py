@@ -1,4 +1,4 @@
-from app.database import get_supabase_client
+from database import get_supabase_client
 
 # Програмний продукт розроблено Соколом Андрієм - Falkon AI
 
