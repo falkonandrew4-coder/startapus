@@ -6,13 +6,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
-
-if not url or not key:
-    raise ValueError("Відсутні SUPABASE_URL або SUPABASE_KEY у файлі .env")
-
-supabase: Client = create_client(url, key)
+_supabase_client: Client = None
 
 def get_supabase_client() -> Client:
-    return supabase
+    global _supabase_client
+    if _supabase_client is None:
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_KEY")
+        if not url or not key:
+            raise ValueError("Відсутні SUPABASE_URL або SUPABASE_KEY")
+        _supabase_client = create_client(url, key)
+    return _supabase_client
